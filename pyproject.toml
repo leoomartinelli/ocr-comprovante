@@ -1,0 +1,37 @@
+[project]
+name = "ocr-comprovante"
+version = "0.1.0"
+description = "Serviço de OCR de comprovantes Pix para o Edusef (consumido pelo n8n)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "pydantic-settings>=2.4",
+    "rapidocr-onnxruntime>=1.4.4",
+    "pillow>=12.3.0",
+    "numpy>=2.5.3",
+    "anthropic>=1.9.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["ocr: usa o motor de OCR real (lento)"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Security", "fastapi.File"]
+
+[tool.ruff.lint]
+ignore = ["C408", "SIM102", "DTZ007"]

@@ -1,0 +1,14 @@
+services:
+  ocr-comprovante:
+    build: .
+    env_file: .env
+    # Só a própria máquina alcança a porta. Se o n8n roda em outro container, coloque os dois
+    # na mesma rede do Docker e use http://ocr-comprovante:8000 (sem publicar a porta).
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ocr-dados:/srv/dados
+    restart: unless-stopped
+
+volumes:
+  ocr-dados:
