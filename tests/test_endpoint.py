@@ -117,7 +117,7 @@ def test_erro_inesperado_nao_vaza_detalhes(png, monkeypatch):
     def quebra(*args, **kwargs):
         raise RuntimeError("segredo interno")
 
-    monkeypatch.setattr(main, "processar", quebra)
+    monkeypatch.setattr(main, "processar_detalhado", quebra)
     resposta = _enviar(TestClient(main.app, raise_server_exceptions=False), png)
     assert resposta.status_code == 500 and "segredo" not in resposta.text
     assert resposta.json() == {

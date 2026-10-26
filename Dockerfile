@@ -20,7 +20,7 @@ RUN useradd --system --no-create-home ocr \
     && chown ocr /srv/dados
 USER ocr
 
-ENV CACHE_DB_PATH=/srv/dados/cache.db
+ENV CACHE_DB_PATH=/srv/dados/cache.db METRICAS_DB_PATH=/srv/dados/metricas.db
 VOLUME /srv/dados
 EXPOSE 8000
 
