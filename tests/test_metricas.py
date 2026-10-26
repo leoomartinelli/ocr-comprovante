@@ -106,6 +106,7 @@ def test_resumo_conta_desfechos_campos_e_dias():
     ]
     assert [f["quantidade"] for f in r["confianca"]][5] == 1
     assert r["ultimos"][0]["quando"].startswith("2026-10-10T12:00:00")
+    assert r["ultimos"][1]["campos_incertos"] == ["id_transacao"]
 
 
 def test_resumo_respeita_o_periodo(metricas):
