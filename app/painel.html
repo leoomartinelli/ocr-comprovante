@@ -470,10 +470,11 @@ function desenharTabela(ultimos) {
       : `<span class="selo"><i style="background:var(--bom)"></i>OK</span>`;
   const quando = (iso) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
   $("ultimos").innerHTML = `<table>
-    <thead><tr><th>Quando</th><th>Situação</th><th>Camada</th><th>Confiança</th><th>Identificador</th><th>Banco</th><th>Tempo</th><th>Motivo do erro</th></tr></thead>
+    <thead><tr><th>Quando</th><th>Situação</th><th>Campos com dúvida</th><th>Camada</th><th>Confiança</th><th>Identificador</th><th>Banco</th><th>Tempo</th><th>Motivo do erro</th></tr></thead>
     <tbody>${ultimos.map((u) => `<tr>
       <td>${quando(u.quando)}</td>
       <td>${situacao(u)}</td>
+      <td>${u.status === 200 ? esc(u.campos_incertos.map((c) => NOMES_INCERTO[c] || c).join(", ") || "—") : "—"}</td>
       <td>${esc(NOMES_METODO[u.metodo] || "—")}</td>
       <td>${u.confianca == null ? "—" : fmtDec.format(u.confianca)}</td>
       <td>${u.status === 200 ? (u.identificador ? "Sim" : "Não") : "—"}</td>

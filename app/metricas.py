@@ -172,6 +172,7 @@ def resumir(eventos: list[Evento], primeiro_dia, dias: int) -> dict:
                 "metodo": e.metodo,
                 "confianca": e.confianca,
                 "revisao": e.revisao,
+                "campos_incertos": e.campos_incertos,
                 "identificador": "identificador" in e.encontrados,
                 "banco": e.banco,
                 "duracao_ms": e.duracao_ms,
