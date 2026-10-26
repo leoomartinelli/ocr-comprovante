@@ -48,8 +48,8 @@ curl -H "X-API-Key: SUA_CHAVE" -F "arquivo=@C:/caminho/print.png" http://localho
 Testes automáticos:
 
 ```bash
-uv run pytest -m "not ocr"   # 152 testes, ~2 s, não usa o OCR real
-uv run pytest                # 157 testes, ~45 s, inclui 5 com o OCR real em prints sintéticos difíceis
+uv run pytest -m "not ocr"   # 162 testes, ~2 s, não usa o OCR real
+uv run pytest                # 167 testes, ~45 s, inclui 5 com o OCR real em prints sintéticos difíceis
 ```
 
 Ensaio do script de avaliação com prints **sintéticos** (dados fictícios, só para ver o fluxo):
@@ -101,6 +101,23 @@ têm campo crítico errado. Meta: zero. Se aparecerem, me mande o arquivo `resul
 
 Erros: `{"success": false, "message": "..."}` com **400** (arquivo inválido/vazio, PDF, sem campo
 `arquivo`), **401** (chave), **413** (maior que 10 MB), **422** (imagem ilegível/sem texto).
+
+## Painel
+
+Abra **`http://SERVIDOR:8000/painel`** no navegador e informe a API key (a mesma do n8n). Mostra,
+por período (hoje, 7, 30 ou 90 dias), atualizando sozinho a cada minuto:
+
+- comprovantes recebidos, lidos com sucesso, erros, lidos sem revisão e que precisam de revisão;
+- identificadores encontrados, valor total lido e tempo por leitura;
+- gráfico por dia, campos encontrados, distribuição da confiança, erros por motivo, campos com
+  dúvida, camada que resolveu (OCR, LLM, cache), banco do favorecido e as últimas 25 chamadas.
+
+Os números vêm de `dados/metricas.db` (`METRICAS_DB_PATH`), gravado a cada chamada de
+`/ocr/comprovante`. **Não guarda nomes, CPF, E2E nem texto**: só status, motivo do erro, camada,
+confiança, valor, banco e quais campos foram achados. Retenção de 365 dias
+(`METRICAS_RETENCAO_DIAS`); `METRICAS_ATIVO=false` desliga. Os dados em JSON ficam em
+`GET /painel/dados?dias=30` (com `X-API-Key`). A porta continua presa a `127.0.0.1` no Docker:
+para abrir o painel de outra máquina, use um túnel SSH ou um proxy com HTTPS.
 
 ## Configurando o n8n (nó HTTP Request)
 
@@ -179,6 +196,7 @@ app/preprocessamento.py, leitura.py, motor_ocr.py   imagem → texto (motor troc
 app/parser.py         texto → campos       app/validadores.py  CPF/CNPJ/E2E
 app/pontuacao.py      confiança            app/cache.py        SQLite por hash
 app/llm.py            fallback Claude Haiku
+app/metricas.py       histórico das chamadas      app/painel.html     página do painel
 scripts/avaliar.py    avaliação com gabarito · gerar_amostras_demo.py · sintetico.py
-tests/                157 testes
+tests/                167 testes
 ```

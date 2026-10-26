@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 os.environ["API_KEY"] = "chave-de-teste"
 os.environ["CACHE_ATIVO"] = "false"
+os.environ["METRICAS_ATIVO"] = "false"
 
 import numpy as np
 import pytest
@@ -11,6 +12,7 @@ from PIL import Image
 
 from app.cache import definir_cache
 from app.main import app
+from app.metricas import definir_metricas
 from app.motor_ocr import CaixaTexto, definir_motor
 from scripts.sintetico import como_bytes
 from tests.textos import ESTILO_A_LIMPO
@@ -39,6 +41,7 @@ def _isolar_singletons():
     yield
     definir_motor(None)
     definir_cache(None)
+    definir_metricas(None)
 
 
 @pytest.fixture

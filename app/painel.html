@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do OCR</title>
+<style>
+:root {
+  color-scheme: light;
+  --pagina: #f9f9f7;
+  --superficie: #fcfcfb;
+  --tinta: #0b0b0b;
+  --tinta-2: #52514e;
+  --tinta-3: #898781;
+  --grade: #e1e0d9;
+  --eixo: #c3c2b7;
+  --borda: rgba(11, 11, 11, 0.10);
+  --serie: #2a78d6;
+  --bom: #0ca30c;
+  --atencao: #fab219;
+  --critico: #d03b3b;
+  --texto-bom: #006300;
+  --texto-critico: #b02a2a;
+  --lavagem: rgba(11, 11, 11, 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --pagina: #0d0d0d;
+    --superficie: #1a1a19;
+    --tinta: #f0efec;
+    --tinta-2: #c3c2b7;
+    --grade: #2c2c2a;
+    --eixo: #383835;
+    --borda: rgba(255, 255, 255, 0.10);
+    --serie: #3987e5;
+    --texto-bom: #0ca30c;
+    --texto-critico: #e66767;
+    --lavagem: rgba(255, 255, 255, 0.05);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --pagina: #0d0d0d;
+  --superficie: #1a1a19;
+  --tinta: #f0efec;
+  --tinta-2: #c3c2b7;
+  --grade: #2c2c2a;
+  --eixo: #383835;
+  --borda: rgba(255, 255, 255, 0.10);
+  --serie: #3987e5;
+  --texto-bom: #0ca30c;
+  --texto-critico: #e66767;
+  --lavagem: rgba(255, 255, 255, 0.05);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--pagina);
+  color: var(--tinta);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+.sub { color: var(--tinta-2); font-size: 13px; margin-top: 2px; }
+.controles { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.segmentado { display: inline-flex; border: 1px solid var(--borda); border-radius: 8px; overflow: hidden; background: var(--superficie); }
+.segmentado button { border: 0; background: none; color: var(--tinta-2); padding: 6px 12px; font: inherit; cursor: pointer; }
+.segmentado button + button { border-left: 1px solid var(--borda); }
+.segmentado button[aria-pressed="true"] { background: var(--lavagem); color: var(--tinta); font-weight: 600; }
+.botao { border: 1px solid var(--borda); background: var(--superficie); color: var(--tinta-2); border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
+.botao:hover, .segmentado button:hover { color: var(--tinta); }
+
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile, .cartao { background: var(--superficie); border: 1px solid var(--borda); border-radius: 12px; }
+.tile { padding: 14px 16px; }
+.tile .rotulo { color: var(--tinta-2); font-size: 12.5px; }
+.tile .numero { font-size: 26px; font-weight: 600; margin-top: 2px; letter-spacing: -0.01em; }
+.tile .nota { color: var(--tinta-3); font-size: 12px; margin-top: 2px; }
+.tile .nota.bom { color: var(--texto-bom); }
+.tile .nota.ruim { color: var(--texto-critico); }
+
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; }
+.cartao { padding: 16px; min-width: 0; }
+.largo { grid-column: 1 / -1; }
+.cartao h2 { font-size: 14px; margin: 0; }
+.cartao .ajuda { color: var(--tinta-2); font-size: 12.5px; margin: 2px 0 12px; }
+.legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--tinta-2); margin-bottom: 8px; }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+svg { display: block; width: 100%; overflow: visible; }
+svg text { fill: var(--tinta-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.barras { display: grid; gap: 8px; }
+.barra { display: grid; grid-template-columns: minmax(0, 42%) 1fr auto; gap: 10px; align-items: center; padding: 2px 4px; border-radius: 6px; }
+.barra:hover { background: var(--lavagem); }
+.barras.largas .barra { grid-template-columns: minmax(0, 62%) 1fr auto; }
+.barra .nome { color: var(--tinta-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barra .trilho { height: 10px; background: var(--lavagem); border-radius: 4px; overflow: hidden; }
+.barra .preenchido { height: 100%; border-radius: 0 4px 4px 0; background: var(--serie); min-width: 2px; }
+.barra .valor { font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; min-width: 64px; }
+.vazio { color: var(--tinta-3); font-size: 13px; padding: 16px 0; }
+
+.tabela { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; color: var(--tinta-2); font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--eixo); white-space: nowrap; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--grade); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.selo { display: inline-flex; align-items: center; gap: 6px; }
+.selo i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+#tooltip { position: fixed; pointer-events: none; background: var(--superficie); border: 1px solid var(--borda); box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; display: none; z-index: 10; max-width: 260px; }
+#tooltip b { display: block; margin-bottom: 2px; }
+#tooltip .linha { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+#tooltip .linha span { display: inline-flex; gap: 6px; align-items: center; color: var(--tinta-2); }
+#tooltip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+#login { max-width: 420px; margin: 12vh auto; }
+#login form { display: grid; gap: 10px; }
+#login input { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--eixo); background: var(--superficie); color: var(--tinta); }
+#login .erro { color: var(--texto-critico); font-size: 13px; min-height: 1em; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <section id="login" class="cartao" hidden>
+    <h1>Painel do OCR</h1>
+    <p class="sub">Informe a API key do serviço (a mesma do header <code>X-API-Key</code> no n8n).</p>
+    <form id="form-login">
+      <input id="chave" type="password" autocomplete="current-password" placeholder="API key" required>
+      <button class="botao" type="submit">Entrar</button>
+      <div class="erro" id="erro-login"></div>
+    </form>
+  </section>
+
+  <div id="painel" hidden>
+    <header>
+      <div>
+        <h1>Painel do OCR de comprovantes</h1>
+        <div class="sub" id="atualizado">Carregando…</div>
+      </div>
+      <div class="controles">
+        <div class="segmentado" role="group" aria-label="Período">
+          <button data-dias="1">Hoje</button>
+          <button data-dias="7">7 dias</button>
+          <button data-dias="30">30 dias</button>
+          <button data-dias="90">90 dias</button>
+        </div>
+        <button class="botao" id="atualizar">Atualizar</button>
+        <button class="botao" id="sair">Sair</button>
+      </div>
+    </header>
+
+    <section class="tiles" id="tiles"></section>
+
+    <section class="grade">
+      <article class="cartao largo">
+        <h2>Comprovantes por dia</h2>
+        <p class="ajuda">Cada barra soma os comprovantes recebidos no dia, divididos pelo desfecho.</p>
+        <div class="legenda">
+          <span><i style="background:var(--bom)"></i>Lido sem revisão</span>
+          <span><i style="background:var(--atencao)"></i>Precisa de revisão</span>
+          <span><i style="background:var(--critico)"></i>Erro</span>
+        </div>
+        <div id="grafico-dias"></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Campos encontrados</h2>
+        <p class="ajuda">% dos comprovantes lidos em que cada campo foi encontrado.</p>
+        <div class="barras" id="campos"></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Confiança da leitura</h2>
+        <p class="ajuda" id="ajuda-confianca">Quantos comprovantes caíram em cada faixa de confiança.</p>
+        <div id="grafico-confianca"></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Erros por motivo</h2>
+        <p class="ajuda">Chamadas que não devolveram dados, agrupadas pela mensagem.</p>
+        <div class="barras largas" id="erros"></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Campos com dúvida</h2>
+        <p class="ajuda">Campos críticos ausentes ou duvidosos (os que levam à revisão).</p>
+        <div class="barras" id="incertos"></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Como foi lido</h2>
+        <p class="ajuda">Camada que resolveu cada comprovante lido.</p>
+        <div class="barras" id="metodos"></div>
+      </article>
+
+      <article class="cartao">
+        <h2>Banco do favorecido</h2>
+        <p class="ajuda">Instituição que recebeu o Pix, segundo o comprovante.</p>
+        <div class="barras" id="bancos"></div>
+      </article>
+
+      <article class="cartao largo">
+        <h2>Últimas chamadas</h2>
+        <p class="ajuda">As 25 mais recentes do período. Sem nomes nem documentos.</p>
+        <div class="tabela" id="ultimos"></div>
+      </article>
+    </section>
+  </div>
+</main>
+<div id="tooltip" role="tooltip"></div>
+
+<script>
+const CHAVE_ARMAZENADA = "ocr-painel-chave";
+const DIAS_ARMAZENADOS = "ocr-painel-dias";
+const ATUALIZAR_A_CADA_MS = 60000;
+const NOMES_METODO = { ocr_local: "OCR local", "ocr_local+llm": "OCR + LLM", cache: "Cache (repetido)" };
+const NOMES_INCERTO = {
+  valor: "Valor", id_transacao: "ID da transação (E2E)", data_hora: "Data e hora",
+  "favorecido.nome": "Nome do favorecido", "pagador.nome": "Nome do pagador",
+  "favorecido.documento": "Documento do favorecido", "pagador.documento": "Documento do pagador",
+};
+
+const $ = (id) => document.getElementById(id);
+const fmtInt = new Intl.NumberFormat("pt-BR");
+const fmtPct = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 });
+const fmtReal = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmtDec = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function guardar(armazem, chave, valor) {
+  try { valor == null ? armazem.removeItem(chave) : armazem.setItem(chave, valor); } catch (_) {}
+}
+function ler(armazem, chave) {
+  try { return armazem.getItem(chave); } catch (_) { return null; }
+}
+
+let chave = ler(sessionStorage, CHAVE_ARMAZENADA);
+let dias = Number(ler(localStorage, DIAS_ARMAZENADOS)) || 30;
+let ultimoResumo = null;
+let temporizador = null;
+
+function esc(texto) {
+  return String(texto ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function pct(parte, todo) { return todo ? parte / todo : 0; }
+function segundos(ms) { return ms == null ? "—" : `${fmtDec.format(ms / 1000)} s`; }
+
+// ---------- tooltip ----------
+const tooltip = $("tooltip");
+document.addEventListener("pointermove", (ev) => {
+  const alvo = ev.target.closest("[data-tip]");
+  if (!alvo) { tooltip.style.display = "none"; return; }
+  tooltip.innerHTML = alvo.dataset.tip;
+  tooltip.style.display = "block";
+  const { width, height } = tooltip.getBoundingClientRect();
+  const x = Math.min(ev.clientX + 14, window.innerWidth - width - 8);
+  const y = ev.clientY + 14 + height > window.innerHeight ? ev.clientY - height - 10 : ev.clientY + 14;
+  tooltip.style.left = `${Math.max(8, x)}px`;
+  tooltip.style.top = `${y}px`;
+});
+function linhaTip(cor, rotulo, valor) {
+  return `<div class="linha"><span><i style="background:${cor}"></i>${esc(rotulo)}</span><strong>${esc(valor)}</strong></div>`;
+}
+
+// ---------- autenticação e busca ----------
+async function buscar() {
+  const resposta = await fetch(`/painel/dados?dias=${dias}`, { headers: { "X-API-Key": chave } });
+  if (resposta.status === 401) { sair("API key inválida."); return; }
+  const corpo = await resposta.json();
+  if (!resposta.ok) throw new Error(corpo.message || `Erro ${resposta.status}`);
+  ultimoResumo = corpo;
+  desenhar(corpo);
+  $("atualizado").textContent =
+    `Atualizado às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · atualiza sozinho a cada minuto`;
+}
+
+function iniciar() {
+  $("login").hidden = true;
+  $("painel").hidden = false;
+  marcarPeriodo();
+  buscar().catch((e) => { $("atualizado").textContent = `Falha ao carregar: ${e.message}`; });
+  clearInterval(temporizador);
+  temporizador = setInterval(() => buscar().catch(() => {}), ATUALIZAR_A_CADA_MS);
+}
+
+function sair(mensagem = "") {
+  chave = null;
+  guardar(sessionStorage, CHAVE_ARMAZENADA, null);
+  clearInterval(temporizador);
+  $("painel").hidden = true;
+  $("login").hidden = false;
+  $("erro-login").textContent = mensagem;
+  $("chave").focus();
+}
+
+$("form-login").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  chave = $("chave").value.trim();
+  guardar(sessionStorage, CHAVE_ARMAZENADA, chave);
+  $("chave").value = "";
+  iniciar();
+});
+$("sair").addEventListener("click", () => sair());
+$("atualizar").addEventListener("click", () => buscar().catch((e) => { $("atualizado").textContent = `Falha: ${e.message}`; }));
+document.querySelectorAll("[data-dias]").forEach((botao) => botao.addEventListener("click", () => {
+  dias = Number(botao.dataset.dias);
+  guardar(localStorage, DIAS_ARMAZENADOS, String(dias));
+  marcarPeriodo();
+  buscar().catch(() => {});
+}));
+function marcarPeriodo() {
+  document.querySelectorAll("[data-dias]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.dias) === dias)));
+}
+
+// ---------- desenho ----------
+function desenhar(r) {
+  desenharTiles(r);
+  desenharDias(r.por_dia);
+  desenharConfianca(r.confianca, r.limiar);
+  const lidos = r.totais.sucesso;
+  barras($("campos"), r.campos.map((c) => ({ nome: c.rotulo, valor: c.encontrados, total: lidos })), {
+    rotulo: (b) => fmtPct.format(pct(b.valor, b.total)),
+    tip: (b) => `<b>${esc(b.nome)}</b>${fmtInt.format(b.valor)} de ${fmtInt.format(b.total)} comprovantes lidos`,
+    vazio: "Nenhum comprovante lido no período.",
+  });
+  barras($("erros"), r.erros.map((e) => ({ nome: `${e.status} · ${e.motivo}`, valor: e.quantidade })), {
+    cor: "var(--critico)", vazio: "Nenhum erro no período.",
+  });
+  barras($("incertos"), r.incertos.map((i) => ({ nome: NOMES_INCERTO[i.campo] || i.campo, valor: i.quantidade, total: lidos })), {
+    cor: "var(--atencao)", vazio: "Nenhum campo com dúvida no período.",
+  });
+  barras($("metodos"), r.metodos.map((m) => ({ nome: NOMES_METODO[m.metodo] || m.metodo, valor: m.quantidade, total: lidos })), {
+    vazio: "Nenhum comprovante lido no período.",
+  });
+  barras($("bancos"), r.bancos.map((b) => ({ nome: b.banco, valor: b.quantidade, total: lidos })), {
+    vazio: "Nenhum comprovante lido no período.",
+  });
+  desenharTabela(r.ultimos);
+}
+
+function tile(rotulo, numero, nota = "", classe = "") {
+  return `<div class="tile"><div class="rotulo">${esc(rotulo)}</div><div class="numero">${esc(numero)}</div><div class="nota ${classe}">${esc(nota)}</div></div>`;
+}
+
+function desenharTiles(r) {
+  const t = r.totais;
+  const llm = t.llm ? ` · ${fmtInt.format(t.llm)} com LLM` : "";
+  $("tiles").innerHTML = [
+    tile("Comprovantes recebidos", fmtInt.format(t.recebidos), t.cache ? `${fmtInt.format(t.cache)} repetidos (cache)` : "no período"),
+    tile("Lidos com sucesso", fmtInt.format(t.sucesso), t.recebidos ? `${fmtPct.format(pct(t.sucesso, t.recebidos))} do total` : "", "bom"),
+    tile("Erros", fmtInt.format(t.erro), t.recebidos ? `${fmtPct.format(pct(t.erro, t.recebidos))} do total` : "", t.erro ? "ruim" : ""),
+    tile("Lidos sem revisão", fmtInt.format(t.automatico), t.sucesso ? `${fmtPct.format(pct(t.automatico, t.sucesso))} dos lidos${llm}` : ""),
+    tile("Precisam de revisão", fmtInt.format(t.revisao), t.sucesso ? `${fmtPct.format(pct(t.revisao, t.sucesso))} dos lidos` : ""),
+    tile("Identificadores encontrados", fmtInt.format(t.identificadores), t.sucesso ? `${fmtPct.format(pct(t.identificadores, t.sucesso))} dos lidos` : ""),
+    tile("Valor total lido", fmtReal.format(t.valor_total), "sem contar repetidos"),
+    tile("Tempo por leitura", segundos(t.duracao_mediana_ms), t.duracao_p95_ms != null ? `mediana · 95% abaixo de ${segundos(t.duracao_p95_ms)}` : "mediana"),
+  ].join("");
+}
+
+function barras(alvo, itens, { cor = "var(--serie)", rotulo, tip, vazio }) {
+  if (!itens.length || itens.every((i) => !i.valor && !i.total)) { alvo.innerHTML = `<div class="vazio">${esc(vazio)}</div>`; return; }
+  const maximo = Math.max(...itens.map((i) => i.total || i.valor), 1);
+  rotulo ||= (b) => fmtInt.format(b.valor);
+  tip ||= (b) => `<b>${esc(b.nome)}</b>${fmtInt.format(b.valor)}${b.total ? ` (${fmtPct.format(pct(b.valor, b.total))} dos lidos)` : ""}`;
+  alvo.innerHTML = itens.map((b) => `
+    <div class="barra" data-tip="${esc(tip(b))}">
+      <div class="nome">${esc(b.nome)}</div>
+      <div class="trilho"><div class="preenchido" style="width:${b.valor ? (100 * b.valor) / maximo : 0}%;background:${cor}"></div></div>
+      <div class="valor">${esc(rotulo(b))}</div>
+    </div>`).join("");
+}
+
+function escala(maximo) {
+  // eixo com 3–5 marcas "redondas"
+  if (maximo <= 4) return { topo: Math.max(maximo, 1), passo: 1 };
+  const bruto = maximo / 4;
+  const mag = 10 ** Math.floor(Math.log10(bruto));
+  const passo = [1, 2, 5, 10].map((m) => m * mag).find((p) => p >= bruto);
+  return { topo: Math.ceil(maximo / passo) * passo, passo };
+}
+
+function svgBarras(alvo, colunas, { altura = 220, rotuloX, pilhas, tipColuna, extra = () => "" }) {
+  const largura = Math.max(alvo.clientWidth, 280);
+  const m = { topo: 8, dir: 4, base: 26, esq: 36 };
+  const w = largura - m.esq - m.dir, h = altura - m.topo - m.base;
+  const totais = colunas.map((c) => pilhas.reduce((s, p) => s + (c[p.chave] || 0), 0));
+  const { topo, passo } = escala(Math.max(...totais, 0));
+  const y = (v) => m.topo + h - (v / topo) * h;
+  const banda = w / colunas.length;
+  const larg = Math.max(2, Math.min(36, banda * 0.72));
+  const cada = Math.ceil(colunas.length / Math.max(1, Math.floor(w / 56)));
+
+  let s = `<svg viewBox="0 0 ${largura} ${altura}" height="${altura}" role="img">`;
+  for (let v = 0; v <= topo; v += passo) {
+    s += `<line x1="${m.esq}" x2="${largura - m.dir}" y1="${y(v)}" y2="${y(v)}" stroke="${v ? "var(--grade)" : "var(--eixo)"}" stroke-width="1"/>`;
+    s += `<text x="${m.esq - 6}" y="${y(v) + 4}" text-anchor="end">${fmtInt.format(v)}</text>`;
+  }
+  colunas.forEach((c, i) => {
+    const x = m.esq + i * banda + (banda - larg) / 2;
+    let base = 0;
+    const visiveis = pilhas.filter((p) => c[p.chave]);
+    visiveis.forEach((p, j) => {
+      const v = c[p.chave];
+      const y0 = y(base), y1 = y(base + v);
+      const ultimo = j === visiveis.length - 1;
+      const alt = Math.max(1, y0 - y1 - (ultimo ? 0 : 2));  // 2px de folga entre segmentos
+      const r = ultimo ? Math.min(4, larg / 2, alt) : 0;
+      s += `<path d="${caminhoBarra(x, y1, larg, alt, r)}" fill="${p.cor}"/>`;
+      base += v;
+    });
+    if (i % cada === 0) s += `<text x="${x + larg / 2}" y="${altura - 8}" text-anchor="middle">${esc(rotuloX(c))}</text>`;
+    s += `<rect x="${m.esq + i * banda}" y="${m.topo}" width="${banda}" height="${h}" fill="transparent" data-tip="${esc(tipColuna(c))}"/>`;
+  });
+  s += extra({ m, w, h, largura, altura, y });
+  alvo.innerHTML = s + "</svg>";
+}
+
+function caminhoBarra(x, y, w, h, r) {
+  // só o topo arredondado; a base fica reta na linha de zero
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+const PILHAS_DIA = [
+  { chave: "automatico", rotulo: "Lido sem revisão", cor: "var(--bom)" },
+  { chave: "revisao", rotulo: "Precisa de revisão", cor: "var(--atencao)" },
+  { chave: "erro", rotulo: "Erro", cor: "var(--critico)" },
+];
+
+function desenharDias(porDia) {
+  const fmtDia = (iso) => { const [, mes, dia] = iso.split("-"); return `${dia}/${mes}`; };
+  svgBarras($("grafico-dias"), porDia, {
+    pilhas: PILHAS_DIA,
+    rotuloX: (c) => fmtDia(c.dia),
+    tipColuna: (c) => {
+      const total = c.automatico + c.revisao + c.erro;
+      return `<b>${fmtDia(c.dia)} · ${fmtInt.format(total)} recebidos</b>` +
+        PILHAS_DIA.slice().reverse().map((p) => linhaTip(p.cor, p.rotulo, fmtInt.format(c[p.chave]))).join("");
+    },
+  });
+}
+
+function desenharConfianca(faixas, limiar) {
+  const alvo = $("grafico-confianca");
+  if (!faixas.some((f) => f.quantidade)) { alvo.innerHTML = `<div class="vazio">Nenhum comprovante lido no período.</div>`; return; }
+  if (limiar != null) $("ajuda-confianca").textContent =
+    `Quantos comprovantes caíram em cada faixa. Abaixo de ${fmtDec.format(limiar)} (linha tracejada) o resultado pede revisão.`;
+  const fmtF = (v) => fmtDec.format(v).replace(/0$/, "");
+  svgBarras(alvo, faixas, {
+    altura: 200,
+    pilhas: [{ chave: "quantidade", cor: "var(--serie)" }],
+    rotuloX: (f) => fmtF(f.de),
+    tipColuna: (f) => `<b>Confiança ${fmtF(f.de)} a ${fmtF(f.ate)}</b>${fmtInt.format(f.quantidade)} comprovantes`,
+    extra: ({ m, w, h }) => {
+      if (limiar == null) return "";
+      const x = m.esq + limiar * w;
+      return `<line x1="${x}" x2="${x}" y1="${m.topo}" y2="${m.topo + h}" stroke="var(--tinta-2)" stroke-width="1.5" stroke-dasharray="4 3" pointer-events="none"/>`;
+    },
+  });
+}
+
+function desenharTabela(ultimos) {
+  if (!ultimos.length) { $("ultimos").innerHTML = `<div class="vazio">Nenhuma chamada no período.</div>`; return; }
+  const situacao = (u) => u.status !== 200
+    ? `<span class="selo"><i style="background:var(--critico)"></i>Erro ${u.status}</span>`
+    : u.revisao
+      ? `<span class="selo"><i style="background:var(--atencao)"></i>Revisão</span>`
+      : `<span class="selo"><i style="background:var(--bom)"></i>OK</span>`;
+  const quando = (iso) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  $("ultimos").innerHTML = `<table>
+    <thead><tr><th>Quando</th><th>Situação</th><th>Camada</th><th>Confiança</th><th>Identificador</th><th>Banco</th><th>Tempo</th><th>Motivo do erro</th></tr></thead>
+    <tbody>${ultimos.map((u) => `<tr>
+      <td>${quando(u.quando)}</td>
+      <td>${situacao(u)}</td>
+      <td>${esc(NOMES_METODO[u.metodo] || "—")}</td>
+      <td>${u.confianca == null ? "—" : fmtDec.format(u.confianca)}</td>
+      <td>${u.status === 200 ? (u.identificador ? "Sim" : "Não") : "—"}</td>
+      <td>${esc(u.banco || "—")}</td>
+      <td>${segundos(u.duracao_ms)}</td>
+      <td>${esc(u.motivo || "")}</td>
+    </tr>`).join("")}</tbody></table>`;
+}
+
+let redimensionar;
+window.addEventListener("resize", () => {
+  clearTimeout(redimensionar);
+  redimensionar = setTimeout(() => ultimoResumo && desenhar(ultimoResumo), 150);
+});
+
+if (chave) iniciar(); else sair();
+</script>
+</body>
+</html>

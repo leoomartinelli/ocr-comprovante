@@ -20,6 +20,11 @@ class Configuracoes(BaseSettings):
     cache_db_path: str = "dados/cache.db"
     cache_ttl_dias: int = 30
 
+    # métricas do painel (sem nomes, documentos nem texto)
+    metricas_ativo: bool = True
+    metricas_db_path: str = "dados/metricas.db"
+    metricas_retencao_dias: int = 365
+
     # fallback LLM (camada 7): desligado por padrão
     llm_fallback_ativo: bool = False
     anthropic_api_key: str | None = None
